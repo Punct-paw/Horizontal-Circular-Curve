@@ -56,9 +56,13 @@ class CircularCurveApp(QWidget):
             D = float(self.inputs['D'].text())
 
             PI = Point(PI_x, PI_y)
+            
+            #Calculate Curve Parameters
             Delta, R, L, LC, T, E, M, BBAzimuth, ABAzimuth, PC, PT = CircularCurve.Horizontal_Circular_Curve.circular_curve(BB, AB, PI, D)
+            Center_Point,Direction=CircularCurve.Horizontal_Circular_Curve.Find_center_of_circle(PC,PT,BB,AB,R)
 
-
+            #Generate correct arc points based on center-to-PC/PT angles
+            arc_points=CircularCurve.Horizontal_Circular_Curve.Generate_arc_points(Center_Point,PC,PT,R,Direction)
             summary = (
                 f"Delta: {Delta:.4f}°\n"
                 f"Radius: {R:.4f} ft\n"
@@ -71,19 +75,56 @@ class CircularCurveApp(QWidget):
                 f"PT: ({PT.x:.2f}, {PT.y:.2f})"
             )
             self.result_label.setText(summary)
-            Center_Point,Direction=CircularCurve.Horizontal_Circular_Curve.Find_center_of_circle(PC,PT,BB,AB,R)
-            arc_points=CircularCurve.Horizontal_Circular_Curve.Generate_arc_points(Center_Point, PC, PT, R, Direction)
-
-            # Plotting
-            
+           
+            #Plotting
             self.canvas.figure.clear()
             ax = self.canvas.figure.add_subplot(111)
+
+            #Plot the arc
             x_vals = [p.x for p in arc_points]
             y_vals = [p.y for p in arc_points]
             ax.plot(x_vals, y_vals, 'r-', label="Horizontal Curve")
+
+            # Plot key points
+            ax.plot([PI.x], [PI.y], 'ko', label='PI')
+            ax.plot([PC.x], [PC.y], 'go', label='PC')
+            ax.plot([PT.x], [PT.y], 'bo', label='PT')
+            ax.plot([Center_Point.x], [Center_Point.y], 'mo', label='Center')
+
+            # Annotate points
+            ax.annotate('PI', (PI.x, PI.y), textcoords="offset points", xytext=(5,5), ha='left')
+            ax.annotate('PC', (PC.x, PC.y), textcoords="offset points", xytext=(5,5), ha='left')
+            ax.annotate('PT', (PT.x, PT.y), textcoords="offset points", xytext=(5,5), ha='left')
+            ax.annotate('Center', (Center_Point.x, Center_Point.y), textcoords="offset points", xytext=(5,5), ha='left')
+
+            # Draw tangents
+            ax.plot([PC.x, PI.x], [PC.y, PI.y], 'g--', label='Back Tangent')
+            ax.plot([PT.x, PI.x], [PT.y, PI.y], 'b--', label='Ahead Tangent')
+
+            # Radius lines
+            ax.plot([Center_Point.x, PC.x], [Center_Point.y, PC.y], 'm:', label='Radius')
+            ax.plot([Center_Point.x, PT.x], [Center_Point.y, PT.y], 'm:')
+
+            # Display values as annotations
+            ax.text(0.01, 0.95, f"R = {R:.2f} ft", transform=ax.transAxes, fontsize=10, verticalalignment='top')
+            ax.text(0.01, 0.90, f"T = {T:.2f} ft", transform=ax.transAxes, fontsize=10, verticalalignment='top')
+            ax.text(0.01, 0.85, f"L = {L:.2f} ft", transform=ax.transAxes, fontsize=10, verticalalignment='top')
+            ax.text(0.01, 0.80, f"LC = {LC:.2f} ft", transform=ax.transAxes, fontsize=10, verticalalignment='top')
+            ax.text(0.01, 0.75, f"E = {E:.2f} ft", transform=ax.transAxes, fontsize=10, verticalalignment='top')
+            ax.text(0.01, 0.70, f"M = {M:.2f} ft", transform=ax.transAxes, fontsize=10, verticalalignment='top')
+            ax.text(0.01, 0.65, f"Δ = {Delta:.2f}°", transform=ax.transAxes, fontsize=10, verticalalignment='top')
+            ax.text(0.01, 0.60, f"Direction = {Direction}", transform=ax.transAxes, fontsize=10, verticalalignment='top')
+            
+            
+            
+
+           #Final Formatting
+
             ax.legend()
             ax.set_title("Horizontal Circular Curve Layout")
             ax.set_aspect('equal')
+            ax.margins(0.2)  # Add 20% margin around the curve
+            ax.autoscale_view()
             self.canvas.draw()
 
         except ValueError:
